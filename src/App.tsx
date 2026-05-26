@@ -33,6 +33,7 @@ const TARGET_LANGUAGES = [
 export default function App() {
   // Input & Settings State
   const [inputText, setInputText] = useState("");
+  const [provider, setProvider] = useState<"gemini" | "nvidia">("gemini");
   const [targetLanguage, setTargetLanguage] = useState("英文 (English)");
   const [activeInstructionId, setActiveInstructionId] = useState("comprehensive");
   const [customInstruction, setCustomInstruction] = useState("");
@@ -107,7 +108,7 @@ export default function App() {
     setErrorMsg(null);
   };
 
-  // Main Submit Call to Server Express API
+  // Main Submit Call to Vercel Serverless Function API
   const handleGenerate = async () => {
     if (!inputText.trim()) {
       setErrorMsg("請先貼上或載入會議記錄逐字稿內容。");
@@ -119,7 +120,7 @@ export default function App() {
     setResult(null);
 
     try {
-      const response = await fetch("/api/summarize", {
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -128,6 +129,7 @@ export default function App() {
           content: inputText,
           targetLanguage: targetLanguage,
           systemInstruction: customInstruction,
+          provider: provider,
         }),
       });
 
@@ -207,7 +209,7 @@ export default function App() {
                   智匯議 AI Meeting Master
                 </h1>
                 <p className="text-[11px] text-slate-400 font-semibold tracking-wide uppercase mt-0.5">
-                  會議紀錄自動生成與多語系翻譯 · 基於 <span className="text-indigo-600">Gemini 3.5 Flash</span>
+                  會議紀錄自動生成與多語系翻譯 · 基於 <span className="text-indigo-600">{provider === "gemini" ? "Gemini 2.5 Flash Lite" : "NVIDIA Nemotron Mini"}</span>
                 </p>
               </div>
             </div>
@@ -231,7 +233,7 @@ export default function App() {
           <Info className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
           <div className="text-xs text-slate-600 leading-relaxed">
             <strong className="font-semibold text-slate-900 block mb-0.5">💡 快速啟動說明</strong>
-            您可以直接在底下點選預設的會議範例逐字稿，或是手動貼上跨部門對話，接著在工具中挑選您要翻譯的核心多語系與摘要排版風格，隨後交給 Gemini 一鍵整理出格式精緻的 Markdown 表格、議題決議與待辦。
+            您可以直接在底下點選預設的會議範例逐字稿，或是手動貼上跨部門對話，接著在工具中挑選您要翻譯的核心多語系與摘要排版風格，隨後交給所選的 AI 服務一鍵整理出格式精緻的 Markdown 表格、議題決議與待辦。
           </div>
         </div>
 
@@ -316,21 +318,38 @@ export default function App() {
               {/* Bottom control row: Select translation Language & Generator Button */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2 border-t border-slate-100">
                 
-                {/* Target translation dropdown */}
-                <div className="flex items-center gap-2 max-w-xs">
-                  <Globe className="w-4 h-4 text-indigo-500 shrink-0" />
-                  <span className="text-xs font-semibold text-slate-500 shrink-0">翻譯語系：</span>
-                  <select
-                    value={targetLanguage}
-                    onChange={(e) => setTargetLanguage(e.target.value)}
-                    className="w-full text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all text-slate-700 cursor-pointer font-medium"
-                  >
-                    {TARGET_LANGUAGES.map((lang) => (
-                      <option key={lang.code} value={lang.code}>
-                        {lang.label}
-                      </option>
-                    ))}
-                  </select>
+                {/* Dropdowns panel */}
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* AI Provider selector */}
+                  <div className="flex items-center gap-2 max-w-xs">
+                    <Sparkles className="w-4 h-4 text-violet-500 shrink-0" />
+                    <span className="text-xs font-semibold text-slate-500 shrink-0">AI 服務：</span>
+                    <select
+                      value={provider}
+                      onChange={(e) => setProvider(e.target.value as "gemini" | "nvidia")}
+                      className="w-full text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all text-slate-700 cursor-pointer font-medium"
+                    >
+                      <option value="gemini">Google Gemini (gemini-2.5-flash-lite)</option>
+                      <option value="nvidia">NVIDIA (nemotron-mini-4b)</option>
+                    </select>
+                  </div>
+
+                  {/* Target translation dropdown */}
+                  <div className="flex items-center gap-2 max-w-xs">
+                    <Globe className="w-4 h-4 text-indigo-500 shrink-0" />
+                    <span className="text-xs font-semibold text-slate-500 shrink-0">翻譯語系：</span>
+                    <select
+                      value={targetLanguage}
+                      onChange={(e) => setTargetLanguage(e.target.value)}
+                      className="w-full text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all text-slate-700 cursor-pointer font-medium"
+                    >
+                      {TARGET_LANGUAGES.map((lang) => (
+                        <option key={lang.code} value={lang.code}>
+                          {lang.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {/* Main Submit Action Button with loading state */}
